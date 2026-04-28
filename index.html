@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>فيسبوك - تسجيل الدخول أو إنشاء حساب</title>
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Tahoma', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            background: #f0f2f5;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* ─── TOP BAR ─── */
+        .topbar {
+            width: 100%;
+            background: #ffffff;
+            border-bottom: 1px solid #dadde1;
+            padding: 0 20px;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .topbar-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .fb-logo-small {
+            font-size: 32px;
+            font-weight: 700;
+            color: #0866ff;
+            line-height: 1;
+        }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .topbar-right .btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: background 0.15s;
+        }
+
+        .btn-login-topbar {
+            background: #0866ff;
+            color: #fff;
+        }
+
+        .btn-login-topbar:hover {
+            background: #0754d4;
+        }
+
+        .btn-signup-topbar {
+            background: #42b72a;
+            color: #fff;
+        }
+
+        .btn-signup-topbar:hover {
+            background: #369d22;
+        }
+
+        .btn-logout {
+            background: #e4e6eb;
+            color: #050505;
+        }
+
+        .btn-logout:hover {
+            background: #d8dadf;
+        }
+
+        /* ─── HERO SECTION ─── */
+        .hero {
+            width: 100%;
+            max-width: 980px;
+            margin: 72px auto 0;
+            padding: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 40px;
+        }
+
+        .hero-left {
+            flex: 1;
+            min-width: 280px;
+            padding-top: 40px;
+        }
+
+        .hero-left .fb-logo {
+            font-size: 56px;
+            font-weight: 700;
+            color: #0866ff;
+            line-height: 1;
+            margin-bottom: 10px;
+        }
+
+        .hero-left .tagline {
+            font-size: 24px;
+            font-weight: 400;
+            color: #1c1e21;
+            line-height: 1.5;
+            max-width: 480px;
+        }
+
+        /* ─── AUTH CARD ─── */
+        .hero-right {
+            flex: 0 0 396px;
+        }
+
+        .auth-card {
+            background: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+            padding: 20px 16px 24px;
+            width: 100%;
+        }
+
+        .auth-card .toggle-tabs {
+            display: flex;
+            margin-bottom: 16px;
+            border-bottom: 2px solid #dadde1;
+        }
+
+        .auth-card .toggle-tabs button {
+            flex: 1;
+            padding: 10px;
+            background: none;
+            border: none;
+            font-size: 15px;
+            font-weight: 600;
+            color: #606770;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+            transition: all 0.15s;
+        }
+
+        .auth-card .toggle-tabs button.active {
+            color: #0866ff;
+            border-bottom-color: #0866ff;
+        }
+
+        .auth-card form {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .auth-card form.hidden {
+            display: none;
+        }
+
+        .auth-card input {
+            padding: 14px 16px;
+            border: 1px solid #dddfe2;
+            border-radius: 6px;
+            font-size: 15px;
+            outline: none;
+            transition: border 0.1s;
+        }
+
+        .auth-card input:focus {
+            border-color: #0866ff;
+            box-shadow: 0 0 0 1px #0866ff;
+        }
+
+        .auth-card .btn-submit {
+            padding: 12px;
+            background: #0866ff;
+            color: #fff;
+            font-size: 17px;
+            font-weight: 700;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .auth-card .btn-submit:hover {
+            background: #0754d4;
+        }
+
+        .auth-card .divider {
+            display: flex;
+            align-items: center;
+            margin: 8px 0;
+        }
+
+        .auth-card .divider::before,
+        .auth-card .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: #dadde1;
+        }
+
+        .auth-card .divider span {
+            padding: 0 12px;
+            color: #606770;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .auth-card .btn-create {
+            padding: 12px;
+            background: #42b72a;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 700;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.15s;
+            align-self: center;
+            width: fit-content;
+            padding: 12px 24px;
+        }
+
+        .auth-card .btn-create:hover {
+            background: #369d22;
+        }
+
+        .auth-card .error-msg {
+            color: #e41e3f;
+            font-size: 13px;
+            text-align: center;
+            min-height: 18px;
+        }
+
+        .auth-card .success-msg {
+            color: #42b72a;
+            font-size: 13px;
+            text-align: center;
+            min-height: 18px;
+        }
+
+        .auth-card .forgot-link {
+            text-align: center;
+            font-size: 13px;
+            color: #0866ff;
+            cursor: pointer;
+            margin-top: 4px;
+        }
+
+        .auth-card .forgot-link:hover {
+            text-decoration: underline;
+        }
+
+        /* ─── FEED (LOGGED IN) ─── */
+        .feed {
+            width: 100%;
+            max-width: 680px;
+            margin: 20px auto;
+            padding: 0 16px 40px;
+            display: none;
+        }
+
+        .feed.visible {
+            display: block;
+        }
+
+        .feed-header {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+
+        .feed-header h2 {
+            font-size: 22px;
+            color: #1c1e21;
+        }
+
+        .feed-header p {
+            color: #606770;
+            margin-top: 4px;
+        }
+
+        .feed-header .avatar {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: #0866ff;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            font-weight: 700;
+            margin: 0 auto 12px;
+        }
+
+        .post-card {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            padding: 16px 20px;
+            margin-bottom: 12px;
+        }
+
+        .post-card .post-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .post-card .post-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #e4e6eb;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: #606770;
+            font-size: 16px;
+        }
+
+        .post-card .post-name {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .post-card .post-text {
+            font-size: 15px;
+            color: #1c1e21;
+            line-height: 1.6;
+        }
+
+        /* ─── FOOTER ─── */
+        .footer {
+            width: 100%;
+            max-width: 980px;
+            margin-top: auto;
+            padding: 20px;
+            font-size: 12px;
+            color: #737373;
+            text-align: center;
+            border-top: 1px solid #dadde1;
+        }
+
+        /* ─── RESPONSIVE ─── */
+        @media (max-width: 860px) {
+            .hero {
+                flex-direction: column;
+                align-items: center;
+                margin-top: 32px;
+            }
+            .hero-left {
+                text-align: center;
+                padding-top: 0;
+            }
+            .hero-left .tagline {
+                max-width: 100%;
+            }
+            .hero-right {
+                flex: 0 0 auto;
+                width: 100%;
+                max-width: 396px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .topbar {
+                height: 48px;
+                padding: 0 12px;
+            }
+            .fb-logo-small { font-size: 26px; }
+            .hero-left .fb-logo { font-size: 40px; }
+            .hero-left .tagline { font-size: 18px; }
+            .topbar-right .btn { font-size: 12px; padding: 6px 12px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ═══ TOP BAR ═══ -->
+    <header class="topbar" id="topbar">
+        <div class="topbar-left">
+            <span class="fb-logo-small">فيسبوك</span>
+        </div>
+        <div class="topbar-right" id="topbarRight">
+            <button class="btn btn-login-topbar" id="topbarLoginBtn" onclick="showLoginTab()">تسجيل الدخول</button>
+            <button class="btn btn-signup-topbar" id="topbarSignupBtn" onclick="showSignupTab()">إنشاء حساب</button>
+        </div>
+    </header>
+
+    <!-- ═══ HERO / AUTH ═══ -->
+    <main class="hero" id="heroSection">
+        <div class="hero-left">
+            <div class="fb-logo">فيسبوك</div>
+            <p class="tagline">
+                تواصل مع الأصدقاء والعالم من حولك على فيسبوك.
+            </p>
+        </div>
+
+        <div class="hero-right">
+            <div class="auth-card" id="authCard">
+                <!-- Tab Toggle -->
+                <div class="toggle-tabs">
+                    <button class="active" id="tabLoginBtn" onclick="showLoginTab()">تسجيل الدخول</button>
+                    <button id="tabSignupBtn" onclick="showSignupTab()">إنشاء حساب</button>
+                </div>
+
+                <!-- Error / Success -->
+                <div class="error-msg" id="errorMsg"></div>
+                <div class="success-msg" id="successMsg"></div>
+
+                <!-- LOGIN FORM -->
+                <form id="loginForm" onsubmit="handleLogin(event)">
+                    <input type="email" id="loginEmail" placeholder="البريد الإلكتروني" required />
+                    <input type="password" id="loginPassword" placeholder="كلمة المرور" required />
+                    <button type="submit" class="btn-submit">تسجيل الدخول</button>
+                    <div class="forgot-link">هل نسيت كلمة المرور؟</div>
+                    <div class="divider"><span>أو</span></div>
+                    <button type="button" class="btn-create" onclick="showSignupTab()">إنشاء حساب جديد</button>
+                </form>
+
+                <!-- SIGNUP FORM -->
+                <form id="signupForm" class="hidden" onsubmit="handleSignup(event)">
+                    <input type="text" id="signupName" placeholder="الاسم الكامل" required />
+                    <input type="email" id="signupEmail" placeholder="البريد الإلكتروني" required />
+                    <input type="password" id="signupPassword" placeholder="كلمة المرور الجديدة" minlength="6" required />
+                    <button type="submit" class="btn-submit">إنشاء حساب</button>
+                    <div class="divider"><span>أو</span></div>
+                    <button type="button" class="btn-create" onclick="showLoginTab()">لديك حساب بالفعل؟</button>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <!-- ═══ FEED (LOGGED IN) ═══ -->
+    <section class="feed" id="feedSection">
+        <div class="feed-header">
+            <div class="avatar" id="userAvatar">م</div>
+            <h2 id="feedUserName">مرحباً!</h2>
+            <p id="feedUserEmail">user@example.com</p>
+        </div>
+
+        <div class="post-card">
+            <div class="post-header">
+                <div class="post-avatar">ف</div>
+                <div>
+                    <div class="post-name">فيسبوك</div>
+                    <div style="font-size:12px;color:#737373;">الآن</div>
+                </div>
+            </div>
+            <div class="post-text">
+                مرحباً بك في فيسبوك! تواصل مع الأصدقاء، شارك الصور، وابقَ على اتصال مع الأشخاص الذين تهتم بهم.
+            </div>
+        </div>
+
+        <div class="post-card">
+            <div class="post-header">
+                <div class="post-avatar">🚀</div>
+                <div>
+                    <div class="post-name">HackerAI</div>
+                    <div style="font-size:12px;color:#737373;">الآن</div>
+                </div>
+            </div>
+            <div class="post-text">
+                صفحة الفيسبوك الخاصة بك متصلة بـ Supabase. نظام المصادقة يعمل بنجاح!
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══ FOOTER ═══ -->
+    <footer class="footer">
+        فيسبوك &copy; 2026 &middot; مبني باستخدام Supabase
+    </footer>
+
+    <script>
+        // ──────────────────────────────────────────────
+        //  SUPABASE CONFIG — VERCEL ENVIRONMENT VARIABLES
+        // ──────────────────────────────────────────────
+        const SUPABASE_URL = 'https://jiunnlqezndakjcvnlpy.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImppdW5ubHFlem5kYWtqY3ZubHB5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczODA0NjUsImV4cCI6MjA5Mjk1NjQ2NX0.fi7Qfp9GR6-JSNRbOmdKztu_jSOgLtECE01I28zxk1c';
+
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // ──────────────────────────────────────────────
+        //  DOM REFS
+        // ──────────────────────────────────────────────
+        const loginForm = document.getElementById('loginForm');
+        const signupForm = document.getElementById('signupForm');
+        const tabLoginBtn = document.getElementById('tabLoginBtn');
+        const tabSignupBtn = document.getElementById('tabSignupBtn');
+        const topbarRight = document.getElementById('topbarRight');
+        const heroSection = document.getElementById('heroSection');
+        const feedSection = document.getElementById('feedSection');
+        const errorMsg = document.getElementById('errorMsg');
+        const successMsg = document.getElementById('successMsg');
+        const feedUserName = document.getElementById('feedUserName');
+        const feedUserEmail = document.getElementById('feedUserEmail');
+        const userAvatar = document.getElementById('userAvatar');
+
+        // ──────────────────────────────────────────────
+        //  TAB TOGGLE
+        // ──────────────────────────────────────────────
+        function showLoginTab() {
+            loginForm.classList.remove('hidden');
+            signupForm.classList.add('hidden');
+            tabLoginBtn.classList.add('active');
+            tabSignupBtn.classList.remove('active');
+            clearMessages();
+        }
+
+        function showSignupTab() {
+            signupForm.classList.remove('hidden');
+            loginForm.classList.add('hidden');
+            tabSignupBtn.classList.add('active');
+            tabLoginBtn.classList.remove('active');
+            clearMessages();
+        }
+
+        function clearMessages() {
+            errorMsg.textContent = '';
+            successMsg.textContent = '';
+        }
+
+        // ──────────────────────────────────────────────
+        //  AUTH HANDLERS
+        // ──────────────────────────────────────────────
+        async function handleLogin(e) {
+            e.preventDefault();
+            clearMessages();
+
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value;
+
+            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+            if (error) {
+                errorMsg.textContent = error.message === 'Invalid login credentials'
+                    ? 'بيانات تسجيل الدخول غير صحيحة'
+                    : error.message;
+                return;
+            }
+
+            successMsg.textContent = 'تم تسجيل الدخول! مرحباً بعودتك.';
+            document.getElementById('loginEmail').value = '';
+            document.getElementById('loginPassword').value = '';
+        }
+
+        async function handleSignup(e) {
+            e.preventDefault();
+            clearMessages();
+
+            const name = document.getElementById('signupName').value.trim();
+            const email = document.getElementById('signupEmail').value.trim();
+            const password = document.getElementById('signupPassword').value;
+
+            const { data, error } = await supabase.auth.signUp({
+                email,
+                password,
+                options: {
+                    data: {
+                        full_name: name,
+                    }
+                }
+            });
+
+            if (error) {
+                errorMsg.textContent = error.message;
+                return;
+            }
+
+            if (data?.user?.identities?.length === 0) {
+                successMsg.textContent = 'يوجد حساب بهذا البريد الإلكتروني بالفعل. يرجى تسجيل الدخول.';
+                return;
+            }
+
+            if (data?.session) {
+                successMsg.textContent = 'تم إنشاء الحساب! مرحباً بك في فيسبوك.';
+            } else {
+                successMsg.textContent = 'تحقق من بريدك الإلكتروني للحصول على رابط التأكيد!';
+            }
+
+            document.getElementById('signupName').value = '';
+            document.getElementById('signupEmail').value = '';
+            document.getElementById('signupPassword').value = '';
+        }
+
+        // ──────────────────────────────────────────────
+        //  SESSION / UI STATE
+        // ──────────────────────────────────────────────
+        function showLoggedInView(user) {
+            heroSection.style.display = 'none';
+            feedSection.classList.add('visible');
+
+            topbarRight.innerHTML = `
+                <button class="btn btn-logout" onclick="handleLogout()">تسجيل الخروج</button>
+            `;
+
+            const name = user.user_metadata?.full_name || user.email?.split('@')[0] || 'مستخدم';
+            feedUserName.textContent = `مرحباً، ${name}!`;
+            feedUserEmail.textContent = user.email || '';
+            userAvatar.textContent = name.charAt(0).toUpperCase();
+        }
+
+        function showLoggedOutView() {
+            heroSection.style.display = 'flex';
+            feedSection.classList.remove('visible');
+
+            topbarRight.innerHTML = `
+                <button class="btn btn-login-topbar" onclick="showLoginTab()">تسجيل الدخول</button>
+                <button class="btn btn-signup-topbar" onclick="showSignupTab()">إنشاء حساب</button>
+            `;
+
+            loginForm.classList.remove('hidden');
+            signupForm.classList.add('hidden');
+            tabLoginBtn.classList.add('active');
+            tabSignupBtn.classList.remove('active');
+            clearMessages();
+        }
+
+        async function handleLogout() {
+            await supabase.auth.signOut();
+        }
+
+        // ──────────────────────────────────────────────
+        //  AUTH STATE LISTENER
+        // ──────────────────────────────────────────────
+        supabase.auth.onAuthStateChange((event, session) => {
+            if (session?.user) {
+                showLoggedInView(session.user);
+            } else {
+                showLoggedOutView();
+            }
+        });
+
+        // ──────────────────────────────────────────────
+        //  CHECK EXISTING SESSION ON LOAD
+        // ──────────────────────────────────────────────
+        (async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session?.user) {
+                showLoggedInView(session.user);
+            }
+        })();
+    </script>
+</body>
+</html>
